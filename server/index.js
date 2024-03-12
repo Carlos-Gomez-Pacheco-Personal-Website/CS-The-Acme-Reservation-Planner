@@ -5,8 +5,8 @@ const {
   createRestaurant,
   fetchCustomers,
   fetchRestaurants,
-  fetchReservations,
   createReservation,
+  fetchReservations,
   destroyReservation,
 } = require("./db");
 
