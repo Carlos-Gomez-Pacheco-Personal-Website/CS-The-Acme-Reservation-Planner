@@ -63,14 +63,6 @@ app.get("/api/reservations", async (req, res, next) => {
   }
 });
 
-// app.post("/api/customers/:id/reservations", async (req, res, next) => {
-//   try {
-//     res.status(201).send(await createReservation(req.body));
-//   } catch (ex) {
-//     next(ex);
-//   }
-// });
-
 app.post("/api/customers/:id/reservations", async (req, res, next) => {
   try {
     const newReservation = await createReservation({
@@ -84,18 +76,6 @@ app.post("/api/customers/:id/reservations", async (req, res, next) => {
     next(ex);
   }
 });
-
-// app.delete(
-//   "/api/customers/:customer_id/reservations/:id",
-//   async (req, res, next) => {
-//     try {
-//       await destroyReservation(req.params.id);
-//       res.sendStatus(204);
-//     } catch (ex) {
-//       next(ex);
-//     }
-//   }
-// );
 
 app.delete(
   "/api/customers/:customer_id/reservations/:id",

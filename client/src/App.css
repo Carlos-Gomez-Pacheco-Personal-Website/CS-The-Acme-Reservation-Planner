@@ -1,11 +1,23 @@
 /* General Styles */
 body {
   font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
 }
 
 .container {
-  max-width: 800px;
-  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin: 2em auto;
+  max-width: 600px;
+  padding: 1em;
+  width: 80%; /* You can adjust this value */
 }
 
 /* Collapsible Styles */
@@ -32,4 +44,26 @@ body {
   overflow: hidden;
   transition: max-height 0.2s ease-out;
   background-color: #f1f1f1;
+}
+
+form {
+  margin-bottom: 1em;
+}
+
+input {
+  margin-bottom: 0.5em;
+  width: 100%;
+}
+
+button {
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.5em 1em;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
