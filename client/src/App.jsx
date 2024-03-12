@@ -5,11 +5,13 @@ import "./App.css";
 const Customer = ({ customer }) => (
   <div className="customer">
     <h3>{customer.name}</h3>
+    <p>UUID: {customer.id}</p>
   </div>
 );
 
 Customer.propTypes = {
   customer: PropTypes.shape({
+    id: PropTypes.any,
     name: PropTypes.any,
   }),
 };
@@ -18,11 +20,13 @@ Customer.propTypes = {
 const Restaurant = ({ restaurant }) => (
   <div className="restaurant">
     <h3>{restaurant.name}</h3>
+    <p>UUID: {restaurant.id}</p>
   </div>
 );
 
 Restaurant.propTypes = {
   restaurant: PropTypes.shape({
+    id: PropTypes.any,
     name: PropTypes.any,
   }),
 };
@@ -102,15 +106,17 @@ function App() {
 
   const createReservation = async () => {
     const customer_id = prompt("Enter customer ID:");
+    // This should be a UUID, not a name
     const restaurant_id = prompt("Enter restaurant ID:");
+    // This should be a UUID, not a name
     const date = prompt("Enter date (YYYY-MM-DD):");
     const party_count = prompt("Enter party count:");
-    const response = await fetch("/api/reservations", {
+    const response = await fetch(`/api/customers/${customer_id}/reservations`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ customer_id, restaurant_id, date, party_count }),
+      body: JSON.stringify({ restaurant_id, date, party_count }),
     });
     const newReservation = await response.json();
     setReservations((prevReservations) => [
@@ -121,7 +127,8 @@ function App() {
 
   const destroyReservation = async () => {
     const id = prompt("Enter reservation ID to delete:");
-    await fetch(`/api/reservations/${id}`, {
+    const customer_id = prompt("Enter customer ID:");
+    await fetch(`/api/customers/${customer_id}/reservations/${id}`, {
       method: "DELETE",
     });
     setReservations((prevReservations) =>
@@ -150,6 +157,7 @@ function App() {
         {customers.map((customer) => (
           <div key={customer.id}>
             <h3>{customer.name}</h3>
+            <h3>{customer.id}</h3>
           </div>
         ))}
       </div>
@@ -167,6 +175,7 @@ function App() {
         {restaurants.map((restaurant) => (
           <div key={restaurant.id}>
             <h3>{restaurant.name}</h3>
+            <h3>{restaurant.id}</h3>
           </div>
         ))}
       </div>

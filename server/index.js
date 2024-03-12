@@ -30,10 +30,26 @@ app.get("/api/customers", async (req, res, next) => {
     next(ex);
   }
 });
+app.post("/api/customers", async (req, res, next) => {
+  try {
+    const newCustomer = await createCustomer(req.body.name);
+    res.status(201).send(newCustomer);
+  } catch (ex) {
+    next(ex);
+  }
+});
 
 app.get("/api/restaurants", async (req, res, next) => {
   try {
     res.send(await fetchRestaurants());
+  } catch (ex) {
+    next(ex);
+  }
+});
+app.post("/api/restaurants", async (req, res, next) => {
+  try {
+    const newRestaurant = await createRestaurant(req.body.name);
+    res.status(201).send(newRestaurant);
   } catch (ex) {
     next(ex);
   }
@@ -47,13 +63,39 @@ app.get("/api/reservations", async (req, res, next) => {
   }
 });
 
+// app.post("/api/customers/:id/reservations", async (req, res, next) => {
+//   try {
+//     res.status(201).send(await createReservation(req.body));
+//   } catch (ex) {
+//     next(ex);
+//   }
+// });
+
 app.post("/api/customers/:id/reservations", async (req, res, next) => {
   try {
-    res.status(201).send(await createReservation(req.body));
+    const newReservation = await createReservation({
+      customer_id: req.params.id,
+      restaurant_id: req.body.restaurant_id,
+      date: req.body.date,
+      party_count: req.body.party_count,
+    });
+    res.status(201).send(newReservation);
   } catch (ex) {
     next(ex);
   }
 });
+
+// app.delete(
+//   "/api/customers/:customer_id/reservations/:id",
+//   async (req, res, next) => {
+//     try {
+//       await destroyReservation(req.params.id);
+//       res.sendStatus(204);
+//     } catch (ex) {
+//       next(ex);
+//     }
+//   }
+// );
 
 app.delete(
   "/api/customers/:customer_id/reservations/:id",
