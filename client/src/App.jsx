@@ -1,10 +1,60 @@
+import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import "./App.css";
+
+const Customer = ({ customer }) => (
+  <div className="customer">
+    <h3>{customer.name}</h3>
+  </div>
+);
+
+Customer.propTypes = {
+  customer: PropTypes.shape({
+    name: PropTypes.any,
+  }),
+};
+
+// Restaurant Component
+const Restaurant = ({ restaurant }) => (
+  <div className="restaurant">
+    <h3>{restaurant.name}</h3>
+  </div>
+);
+
+Restaurant.propTypes = {
+  restaurant: PropTypes.shape({
+    name: PropTypes.any,
+  }),
+};
+
+// Reservation Component
+const Reservation = ({ reservation }) => (
+  <div className="reservation">
+    <h3>Reservation ID: {reservation.id}</h3>
+    <p>Customer ID: {reservation.customer_id}</p>
+    <p>Restaurant ID: {reservation.restaurant_id}</p>
+    <p>Date: {reservation.date}</p>
+    <p>Party Count: {reservation.party_count}</p>
+  </div>
+);
+
+Reservation.propTypes = {
+  reservation: PropTypes.shape({
+    customer_id: PropTypes.any,
+    date: PropTypes.any,
+    id: PropTypes.any,
+    party_count: PropTypes.any,
+    restaurant_id: PropTypes.any,
+  }),
+};
 
 function App() {
   const [customers, setCustomers] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [reservations, setReservations] = useState([]);
+  const [customerVisible, setCustomerVisible] = useState(false);
+  const [restaurantVisible, setRestaurantVisible] = useState(false);
+  const [reservationVisible, setReservationVisible] = useState(false);
 
   // Fetch the data when the component mounts
   useEffect(() => {
@@ -80,41 +130,67 @@ function App() {
   };
 
   return (
-    <div>
+    <div className="container">
       <h1>Reservation System</h1>
-
       <button onClick={createCustomer}>Create Customer</button>
-
       <button onClick={createRestaurant}>Create Restaurant</button>
-
       <button onClick={createReservation}>Create Reservation</button>
-
       <button onClick={destroyReservation}>Delete Reservation</button>
 
-      <h2>Customers</h2>
-      {customers.map((customer) => (
-        <div key={customer.id}>
-          <h3>{customer.name}</h3>
-        </div>
-      ))}
+      <button
+        className="collapsible"
+        onClick={() => setCustomerVisible(!customerVisible)}
+      >
+        Customers
+      </button>
+      <div
+        className="content"
+        style={{ maxHeight: customerVisible ? "100%" : "0" }}
+      >
+        {customers.map((customer) => (
+          <div key={customer.id}>
+            <h3>{customer.name}</h3>
+          </div>
+        ))}
+      </div>
 
-      <h2>Restaurants</h2>
-      {restaurants.map((restaurant) => (
-        <div key={restaurant.id}>
-          <h3>{restaurant.name}</h3>
-        </div>
-      ))}
+      <button
+        className="collapsible"
+        onClick={() => setRestaurantVisible(!restaurantVisible)}
+      >
+        Restaurants
+      </button>
+      <div
+        className="content"
+        style={{ maxHeight: restaurantVisible ? "100%" : "0" }}
+      >
+        {restaurants.map((restaurant) => (
+          <div key={restaurant.id}>
+            <h3>{restaurant.name}</h3>
+          </div>
+        ))}
+      </div>
 
-      <h2>Reservations</h2>
-      {reservations.map((reservation) => (
-        <div key={reservation.id}>
-          <h3>Reservation ID: {reservation.id}</h3>
-          <p>Customer ID: {reservation.customer_id}</p>
-          <p>Restaurant ID: {reservation.restaurant_id}</p>
-          <p>Date: {reservation.date}</p>
-          <p>Party Count: {reservation.party_count}</p>
-        </div>
-      ))}
+      <button
+        className="collapsible"
+        onClick={() => setReservationVisible(!reservationVisible)}
+      >
+        Reservations
+      </button>
+      <div
+        className="content"
+        style={{ maxHeight: reservationVisible ? "100%" : "0" }}
+      >
+        {reservations.map((reservation) => (
+          <div key={reservation.id}>
+            <h3>Reservation ID: {reservation.id}</h3>
+            <p>Customer ID: {reservation.customer_id}</p>
+            <p>Restaurant ID: {reservation.restaurant_id}</p>
+            <p>Date: {reservation.date}</p>
+            <p>Party Count: {reservation.party_count}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
