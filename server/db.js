@@ -1,106 +1,113 @@
-const {
-  client,
-  createTables,
-  createUser,
-  createPlace,
-  fetchUsers,
-  fetchPlaces,
-  createVacation,
-  fetchVacations,
-  destroyVacation,
-} = require("./db");
-const express = require("express");
-const app = express();
-app.use(express.json());
+const pg = require("pg");
+const client = new pg.Client(
+  process.env.DATABASE_URL ||
+    "postgres://localhost/the_acme_reservation_planner"
+);
+const uuid = require("uuid");
 
-app.get("/api/users", async (req, res, next) => {
-  try {
-    res.send(await fetchUsers());
-  } catch (ex) {
-    next(ex);
-  }
-});
+const createTables = async () => {
+  const SQL = `
+DROP TABLE IF EXISTS reservations;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS restaurants;
 
-app.get("/api/places", async (req, res, next) => {
-  try {
-    res.send(await fetchPlaces());
-  } catch (ex) {
-    next(ex);
-  }
-});
-
-app.get("/api/vacations", async (req, res, next) => {
-  try {
-    res.send(await fetchVacations());
-  } catch (ex) {
-    next(ex);
-  }
-});
-
-app.delete("/api/vacations/:id", async (req, res, next) => {
-  try {
-    await destroyVacation(req.params.id);
-    res.sendStatus(204);
-  } catch (ex) {
-    next(ex);
-  }
-});
-
-app.post("/api/vacations", async (req, res, next) => {
-  try {
-    res.status(201).send(await createVacation(req.body));
-  } catch (ex) {
-    next(ex);
-  }
-});
-
-const init = async () => {
-  await client.connect();
-  console.log("connected to database");
-  await createTables();
-  console.log("tables created");
-  const [moe, lucy, ethyl, rome, nyc, la, paris] = await Promise.all([
-    createUser("moe"),
-    createUser("lucy"),
-    createUser("ethyl"),
-    createPlace("rome"),
-    createPlace("nyc"),
-    createPlace("la"),
-    createPlace("paris"),
-  ]);
-  console.log(`moe has an id of ${moe.id}`);
-  console.log(`rome has an id of ${rome.id}`);
-  console.log(await fetchUsers());
-  console.log(await fetchPlaces());
-  await Promise.all([
-    createVacation({
-      user_id: moe.id,
-      place_id: nyc.id,
-      departure_date: "04/01/2024",
-    }),
-    createVacation({
-      user_id: moe.id,
-      place_id: nyc.id,
-      departure_date: "04/15/2024",
-    }),
-    createVacation({
-      user_id: lucy.id,
-      place_id: la.id,
-      departure_date: "07/04/2024",
-    }),
-    createVacation({
-      user_id: lucy.id,
-      place_id: rome.id,
-      departure_date: "10/31/2024",
-    }),
-  ]);
-  const vacations = await fetchVacations();
-  console.log(vacations);
-  await destroyVacation(vacations[0].id);
-  console.log(await fetchVacations());
-
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => console.log(`listening on port ${port}`));
+CREATE TABLE customers(
+  id UUID PRIMARY KEY,
+  name VARCHAR(100)
+);
+CREATE TABLE restaurants(
+  id UUID PRIMARY KEY,
+  name VARCHAR(100)
+);
+CREATE TABLE reservations(
+  id UUID PRIMARY KEY,
+  customer_id UUID REFERENCES customers(id) NOT NULL,
+  restaurant_id UUID REFERENCES restaurants(id) NOT NULL,
+  date DATE NOT NULL,
+  party_count INTEGER NOT NULL
+);
+  `;
+  await client.query(SQL);
 };
 
-init();
+const createCustomer = async (name) => {
+  const SQL = `
+    INSERT INTO customers(id, name) VALUES($1, $2) RETURNING *
+  `;
+  const response = await client.query(SQL, [uuid.v4(), name]);
+  return response.rows[0];
+};
+
+const createRestaurant = async (name) => {
+  const SQL = `
+    INSERT INTO restaurants(id, name) VALUES($1, $2) RETURNING *
+  `;
+  const response = await client.query(SQL, [uuid.v4(), name]);
+  return response.rows[0];
+};
+
+const fetchCustomers = async () => {
+  const SQL = `
+SELECT *
+FROM customers
+  `;
+  const response = await client.query(SQL);
+  return response.rows;
+};
+
+const fetchRestaurants = async () => {
+  const SQL = `
+SELECT *
+FROM restaurants
+  `;
+  const response = await client.query(SQL);
+  return response.rows;
+};
+
+const createReservation = async ({
+  customer_id,
+  restaurant_id,
+  date,
+  party_count,
+}) => {
+  const SQL = `
+    INSERT INTO reservations(id, customer_id, restaurant_id, date, party_count) VALUES($1, $2, $3, $4, $5) RETURNING *
+  `;
+  const response = await client.query(SQL, [
+    uuid.v4(),
+    customer_id,
+    restaurant_id,
+    date,
+    party_count,
+  ]);
+  return response.rows[0];
+};
+
+const fetchReservations = async () => {
+  const SQL = `
+SELECT *
+FROM reservations
+  `;
+  const response = await client.query(SQL);
+  return response.rows;
+};
+
+const destroyReservation = async (id) => {
+  const SQL = `
+DELETE FROM reservations
+where id = $1
+  `;
+  await client.query(SQL, [id]);
+};
+
+module.exports = {
+  client,
+  createTables,
+  createCustomer,
+  createRestaurant,
+  fetchCustomers,
+  fetchRestaurants,
+  createReservation,
+  fetchReservations,
+  destroyReservation,
+};

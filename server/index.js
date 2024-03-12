@@ -1,106 +1,123 @@
-const pg = require("pg");
-const client = new pg.Client(
-  process.env.DATABASE_URL ||
-    "postgres://localhost/the_acme_reservation_planner"
-);
-const uuid = require("uuid");
-
-const createTables = async () => {
-  const SQL = `
-DROP TABLE IF EXISTS vacations;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS places;
-
-CREATE TABLE users(
-  id UUID PRIMARY KEY,
-  name VARCHAR(100)
-);
-CREATE TABLE places(
-  id UUID PRIMARY KEY,
-  name VARCHAR(100)
-);
-CREATE TABLE vacations(
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id) NOT NULL,
-  place_id UUID REFERENCES places(id) NOT NULL,
-  departure_date DATE
-);
-  `;
-  await client.query(SQL);
-};
-
-const createUser = async (name) => {
-  const SQL = `
-    INSERT INTO users(id, name) VALUES($1, $2) RETURNING *
-  `;
-  const response = await client.query(SQL, [uuid.v4(), name]);
-  return response.rows[0];
-};
-
-const createPlace = async (name) => {
-  const SQL = `
-    INSERT INTO places(id, name) VALUES($1, $2) RETURNING *
-  `;
-  const response = await client.query(SQL, [uuid.v4(), name]);
-  return response.rows[0];
-};
-
-const createVacation = async ({ place_id, user_id, departure_date }) => {
-  const SQL = `
-    INSERT INTO vacations(id, place_id, user_id, departure_date) VALUES($1, $2, $3, $4) RETURNING *
-  `;
-  const response = await client.query(SQL, [
-    uuid.v4(),
-    place_id,
-    user_id,
-    departure_date,
-  ]);
-  return response.rows[0];
-};
-
-const fetchUsers = async () => {
-  const SQL = `
-SELECT *
-FROM users
-  `;
-  const response = await client.query(SQL);
-  return response.rows;
-};
-
-const fetchPlaces = async () => {
-  const SQL = `
-SELECT *
-FROM places
-  `;
-  const response = await client.query(SQL);
-  return response.rows;
-};
-
-const fetchVacations = async () => {
-  const SQL = `
-SELECT *
-FROM vacations
-  `;
-  const response = await client.query(SQL);
-  return response.rows;
-};
-
-const destroyVacation = async (id) => {
-  const SQL = `
-DELETE FROM vacations
-where id = $1
-  `;
-  await client.query(SQL, [id]);
-};
-
-module.exports = {
+const {
   client,
   createTables,
-  createUser,
-  createPlace,
-  fetchUsers,
-  fetchPlaces,
-  createVacation,
-  fetchVacations,
-  destroyVacation,
+  createCustomer,
+  createRestaurant,
+  fetchCustomers,
+  fetchRestaurants,
+  fetchReservations,
+  createReservation,
+  destroyReservation,
+} = require("./db");
+
+const express = require("express");
+const app = express();
+app.use(express.json());
+
+const path = require("path");
+app.get("/", (req, res) =>
+  res.sendFile(path.join(__dirname, "../client/dist/index.html"))
+);
+app.use(
+  "/assets",
+  express.static(path.join(__dirname, "../client/dist/assets"))
+);
+
+app.get("/api/customers", async (req, res, next) => {
+  try {
+    res.send(await fetchCustomers());
+  } catch (ex) {
+    next(ex);
+  }
+});
+
+app.get("/api/restaurants", async (req, res, next) => {
+  try {
+    res.send(await fetchRestaurants());
+  } catch (ex) {
+    next(ex);
+  }
+});
+
+app.get("/api/reservations", async (req, res, next) => {
+  try {
+    res.send(await fetchReservations());
+  } catch (ex) {
+    next(ex);
+  }
+});
+
+app.post("/api/customers/:id/reservations", async (req, res, next) => {
+  try {
+    res.status(201).send(await createReservation(req.body));
+  } catch (ex) {
+    next(ex);
+  }
+});
+
+app.delete(
+  "/api/customers/:customer_id/reservations/:id",
+  async (req, res, next) => {
+    try {
+      await destroyReservation(req.params.id);
+      res.sendStatus(204);
+    } catch (ex) {
+      next(ex);
+    }
+  }
+);
+
+const init = async () => {
+  await client.connect();
+  console.log("connected to database");
+  await createTables();
+  console.log("tables created");
+  const [moe, lucy, ethyl, rome, nyc, la, paris] = await Promise.all([
+    createCustomer("moe"),
+    createCustomer("lucy"),
+    createCustomer("ethyl"),
+    createRestaurant("rome"),
+    createRestaurant("nyc"),
+    createRestaurant("la"),
+    createRestaurant("paris"),
+  ]);
+  console.log(`moe has an id of ${moe.id}`);
+  console.log(`rome has an id of ${rome.id}`);
+  console.log(await fetchCustomers());
+  console.log(await fetchRestaurants());
+  await Promise.all([
+    createReservation({
+      customer_id: moe.id,
+      restaurant_id: nyc.id,
+      date: "04/01/2024",
+      party_count: 4,
+    }),
+    createReservation({
+      customer_id: moe.id,
+      restaurant_id: nyc.id,
+      date: "04/15/2024",
+      party_count: 4,
+    }),
+    createReservation({
+      customer_id: lucy.id,
+      restaurant_id: la.id,
+      date: "07/04/2024",
+      party_count: 4,
+    }),
+    createReservation({
+      customer_id: lucy.id,
+      restaurant_id: rome.id,
+      date: "10/31/2024",
+      party_count: 4,
+    }),
+  ]);
+  const reservations = await fetchReservations();
+  console.log(reservations);
+  await destroyReservation(reservations[0].id);
+  console.log(await fetchReservations());
+
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => console.log(`listening on port ${port}`));
 };
+
+init();
